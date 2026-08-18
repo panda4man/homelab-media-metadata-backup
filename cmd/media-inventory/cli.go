@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
+	"github.com/panda4man/homelab-media-metadata-backup/internal/config"
 )
 
 // Exit codes:
@@ -25,10 +27,11 @@ const usage = `usage: media-inventory <command>
 
 commands:
   run       execute a full inventory scan
+  config    print the resolved configuration and exit
   version   print the version and exit
 `
 
-func realMain(args []string, stdout, stderr io.Writer) int {
+func realMain(args []string, stdout, stderr io.Writer, getenv func(string) string) int {
 	if len(args) == 0 {
 		fmt.Fprint(stderr, usage)
 		return exitUsage
@@ -38,8 +41,16 @@ func realMain(args []string, stdout, stderr io.Writer) int {
 	case "version":
 		fmt.Fprintln(stdout, version)
 		return exitOK
+	case "config":
+		cfg, err := config.Load(getenv)
+		if err != nil {
+			fmt.Fprintln(stderr, "error:", err)
+			return exitUsage
+		}
+		fmt.Fprint(stdout, cfg.String())
+		return exitOK
 	case "run":
-		if err := runCommand(args[1:], stdout, stderr); err != nil {
+		if err := runCommand(args[1:], stdout, stderr, getenv); err != nil {
 			fmt.Fprintln(stderr, "error:", err)
 			return exitFailed
 		}
@@ -50,8 +61,7 @@ func realMain(args []string, stdout, stderr io.Writer) int {
 	}
 }
 
-// runCommand is a placeholder until config loading (slice 2) and the
-// orchestrator (slice 17) exist.
-func runCommand(_ []string, _, _ io.Writer) error {
+// runCommand is a placeholder until the orchestrator (slice 17) exists.
+func runCommand(_ []string, _, _ io.Writer, _ func(string) string) error {
 	return errors.New("run: not yet implemented")
 }
