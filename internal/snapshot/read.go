@@ -77,12 +77,8 @@ func findNewestDatedSnapshot(dir string) (path string, found bool, err error) {
 			continue
 		}
 		name := e.Name()
-		if !strings.HasPrefix(name, "media-inventory-") || !strings.HasSuffix(name, ".json") {
-			continue
-		}
-		datePart := strings.TrimSuffix(strings.TrimPrefix(name, "media-inventory-"), ".json")
-		d, err := time.Parse("2006-01-02", datePart)
-		if err != nil {
+		d, ok := parseSnapshotDate(name)
+		if !ok {
 			continue
 		}
 		if newestName == "" || d.After(newestDate) {
@@ -94,4 +90,20 @@ func findNewestDatedSnapshot(dir string) (path string, found bool, err error) {
 		return "", false, nil
 	}
 	return filepath.Join(dir, newestName), true, nil
+}
+
+// parseSnapshotDate reports the date encoded in a dated snapshot filename
+// (media-inventory-YYYY-MM-DD.json), or ok=false for anything else -
+// pointer files, CSV exports, .sha256 sidecars, .tmp files, and any
+// unrelated file all fail this check and are left alone by every caller.
+func parseSnapshotDate(name string) (time.Time, bool) {
+	if !strings.HasPrefix(name, "media-inventory-") || !strings.HasSuffix(name, ".json") {
+		return time.Time{}, false
+	}
+	datePart := strings.TrimSuffix(strings.TrimPrefix(name, "media-inventory-"), ".json")
+	d, err := time.Parse("2006-01-02", datePart)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return d, true
 }
