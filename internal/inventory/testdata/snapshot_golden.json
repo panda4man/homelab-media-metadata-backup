@@ -1,0 +1,68 @@
+{
+  "generated_at": "2026-08-17T03:00:00Z",
+  "schema_version": 1,
+  "hostname": "unraid",
+  "summary": {
+    "movies": 2,
+    "series": 2,
+    "episodes": 2,
+    "media_files": 4,
+    "total_bytes": 8481934341
+  },
+  "movies": [
+    {
+      "title": "Inception",
+      "year": 2010,
+      "tmdb_id": 27205,
+      "imdb_id": "tt1375666",
+      "dir": "Movies/Inception (2010)",
+      "path": "Movies/Inception (2010)/Inception.mkv",
+      "bytes": 3481932841,
+      "mtime": "2024-01-02T03:04:05Z"
+    },
+    {
+      "title": "Sample",
+      "year": 1999,
+      "tmdb_id": 42,
+      "dir": "Movies/Sample (1999)",
+      "path": "Movies/Sample (1999)/Sample.mkv",
+      "bytes": 1000,
+      "mtime": "2020-01-01T00:00:00Z"
+    }
+  ],
+  "series": [
+    {
+      "title": "Severance",
+      "year": 2022,
+      "tvdb_id": 371980,
+      "tmdb_id": 95396,
+      "dir": "TV/Severance (2022)",
+      "episodes": [
+        {
+          "season": 1,
+          "episode": 1,
+          "title": "Good News About Hell",
+          "path": "TV/Severance (2022)/Season 01/Severance - S01E01.mkv",
+          "bytes": 5000000000,
+          "mtime": "2024-02-03T04:05:06Z"
+        }
+      ]
+    },
+    {
+      "title": "Untitled Show",
+      "year": 2021,
+      "tvdb_id": 1,
+      "dir": "TV/Untitled Show (2021)",
+      "episodes": [
+        {
+          "season": 1,
+          "episode": 1,
+          "title": "Pilot",
+          "path": "TV/Untitled Show (2021)/Season 01/Untitled - S01E01.mkv",
+          "bytes": 500,
+          "mtime": "2021-01-01T00:00:00Z"
+        }
+      ]
+    }
+  ]
+}
