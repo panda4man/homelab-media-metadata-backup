@@ -19,6 +19,20 @@ func validConfigEnv() map[string]string {
 	}
 }
 
+// runnableConfigEnv is validConfigEnv plus a real, writable SNAPSHOT_PATH
+// (required even for a run that fails fast, since the lock file lives
+// there) and Radarr/Sonarr URLs pointed at a port nothing listens on, so
+// "unreachable" fails instantly via connection-refused rather than a slow
+// DNS lookup or timeout.
+func runnableConfigEnv(t *testing.T) map[string]string {
+	t.Helper()
+	env := validConfigEnv()
+	env["SNAPSHOT_PATH"] = t.TempDir()
+	env["RADARR_URL"] = "http://127.0.0.1:1"
+	env["SONARR_URL"] = "http://127.0.0.1:1"
+	return env
+}
+
 func getenvFrom(m map[string]string) func(string) string {
 	return func(key string) string { return m[key] }
 }
@@ -65,16 +79,26 @@ func TestRealMain_Version_PrintsVersionAndExits0(t *testing.T) {
 	}
 }
 
-func TestRealMain_Run_NotYetImplemented_Exits1(t *testing.T) {
+func TestRealMain_Run_UnreachableServices_ExitsFailed(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 
-	code := realMain([]string{"run"}, &stdout, &stderr, getenvFrom(validConfigEnv()))
+	code := realMain([]string{"run"}, &stdout, &stderr, getenvFrom(runnableConfigEnv(t)))
 
 	if code != 1 {
-		t.Fatalf("exit code = %d, want 1, stderr = %q", code, stderr.String())
+		t.Fatalf("exit code = %d, want 1 (failed state - Radarr/Sonarr unreachable), stderr = %q", code, stderr.String())
+	}
+}
+
+func TestRealMain_Run_MissingConfig_ExitsUsageError(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+
+	code := realMain([]string{"run"}, &stdout, &stderr, noEnv)
+
+	if code != 2 {
+		t.Fatalf("exit code = %d, want 2, stderr = %q", code, stderr.String())
 	}
 	if stderr.Len() == 0 {
-		t.Fatal("stderr = empty, want an error message")
+		t.Fatal("stderr = empty, want a config error message")
 	}
 }
 
