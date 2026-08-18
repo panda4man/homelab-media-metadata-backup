@@ -1,0 +1,35 @@
+[
+  {
+    "title": "Inception",
+    "year": 2010,
+    "tmdbId": 27205,
+    "imdbId": "tt1375666",
+    "path": "/media/movies/Inception (2010)",
+    "hasFile": true,
+    "movieFile": {
+      "relativePath": "Inception.mkv",
+      "size": 3481932841
+    }
+  },
+  {
+    "title": "Missing On Disk",
+    "year": 2015,
+    "tmdbId": 99001,
+    "imdbId": "tt9999999",
+    "path": "/media/movies/Missing On Disk (2015)",
+    "hasFile": false,
+    "movieFile": null
+  },
+  {
+    "title": "No TMDB Match",
+    "year": 2019,
+    "tmdbId": 0,
+    "imdbId": "",
+    "path": "/media/movies/No TMDB Match (2019)",
+    "hasFile": true,
+    "movieFile": {
+      "relativePath": "No TMDB Match.mkv",
+      "size": 1024
+    }
+  }
+]
