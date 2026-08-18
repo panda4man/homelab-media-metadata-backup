@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "seriesId": 1,
+    "seasonNumber": 1,
+    "episodeNumber": 1,
+    "title": "Good News About Hell",
+    "hasFile": true,
+    "episodeFileId": 501
+  },
+  {
+    "id": 2,
+    "seriesId": 1,
+    "seasonNumber": 1,
+    "episodeNumber": 2,
+    "title": "Half Loop",
+    "hasFile": false,
+    "episodeFileId": 0
+  },
+  {
+    "id": 3,
+    "seriesId": 1,
+    "seasonNumber": 0,
+    "episodeNumber": 1,
+    "title": "Special: Behind the Scenes",
+    "hasFile": true,
+    "episodeFileId": 502
+  },
+  {
+    "id": 4,
+    "seriesId": 1,
+    "seasonNumber": 1,
+    "episodeNumber": 3,
+    "title": "In Perpetuity Part 1",
+    "hasFile": true,
+    "episodeFileId": 503
+  },
+  {
+    "id": 5,
+    "seriesId": 1,
+    "seasonNumber": 1,
+    "episodeNumber": 4,
+    "title": "In Perpetuity Part 2",
+    "hasFile": true,
+    "episodeFileId": 503
+  }
+]
