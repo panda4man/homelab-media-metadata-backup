@@ -1,0 +1,5 @@
+title,year,tmdb_id,imdb_id,path,bytes
+Se7en,1995,807,tt0114369,Se7en (1995)/Se7en.mkv,3481932841
+"Movie, With Comma",2000,1,,"Movie, With Comma (2000)/movie.mkv",100
+"Movie ""Quoted"" Title",2001,2,tt1,Quoted (2001)/movie.mkv,200
+Café,2002,3,tt2,Cafe (2002)/movie.mkv,300
