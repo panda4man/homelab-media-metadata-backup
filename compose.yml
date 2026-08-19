@@ -1,0 +1,35 @@
+services:
+  media-inventory:
+    build: .
+    container_name: media-inventory
+    restart: unless-stopped
+
+    # These three are fixed to match the volumes below and deliberately
+    # override whatever env_file provides for them - the app only ever
+    # sees container-internal paths, never the host-side source paths.
+    environment:
+      TZ: ${TZ}
+      MEDIA_MOVIES_PATH: /media/movies
+      MEDIA_TV_PATH: /media/tv
+      SNAPSHOT_PATH: /data/snapshots
+
+    env_file:
+      - .env
+
+    volumes:
+      - ${HOST_MEDIA_MOVIES_PATH}:/media/movies:ro
+      - ${HOST_MEDIA_TV_PATH}:/media/tv:ro
+      - ${HOST_SNAPSHOT_PATH}:/data/snapshots
+
+    networks:
+      - homelab_stack
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  homelab_stack:
+    external: true

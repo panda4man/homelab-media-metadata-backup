@@ -1,0 +1,4 @@
+# Runs every Sunday at 11:00 PM in the container's configured TZ.
+# supercronic streams the job's stdout/stderr to its own log (container
+# stdout), so no output redirection is needed here.
+0 23 * * 0 /app/media-inventory run
