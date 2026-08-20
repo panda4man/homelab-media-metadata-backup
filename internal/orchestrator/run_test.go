@@ -351,6 +351,15 @@ func TestRun_AlreadyLocked_ReturnsErrAlreadyRunning(t *testing.T) {
 	}
 }
 
+func TestLockPath_MatchesRunAcquirePath(t *testing.T) {
+	cfg := healthyConfig(t.TempDir())
+	want := cfg.SnapshotPath + "/" + lockFileName
+
+	if got := LockPath(cfg); got != want {
+		t.Errorf("LockPath() = %q, want %q", got, want)
+	}
+}
+
 func TestRun_FinalLogLine_ContainsStateDurationCounts(t *testing.T) {
 	dir := t.TempDir()
 	cfg := healthyConfig(dir)

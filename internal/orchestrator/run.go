@@ -33,6 +33,12 @@ type Result struct {
 
 const lockFileName = ".media-inventory.lock"
 
+// LockPath returns the run lock file path for cfg, so callers outside this
+// package (the HTTP API) can probe the same path Run itself acquires.
+func LockPath(cfg config.Config) string {
+	return cfg.SnapshotPath + "/" + lockFileName
+}
+
 // Run executes one full scheduled run: verify sources, gather metadata,
 // walk the filesystem, build and write the snapshot, validate it, sync
 // off-site, publish metrics, and prune old snapshots - all behind a
@@ -47,7 +53,7 @@ func Run(ctx context.Context, cfg config.Config, deps Deps) (result Result, err 
 		return Result{State: validation.StateFailed}, fmt.Errorf("orchestrator: creating snapshot directory: %w", mkErr)
 	}
 
-	release, lockErr := runlock.Acquire(cfg.SnapshotPath + "/" + lockFileName)
+	release, lockErr := runlock.Acquire(LockPath(cfg))
 	if lockErr != nil {
 		return Result{}, lockErr
 	}

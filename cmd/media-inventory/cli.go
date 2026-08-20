@@ -10,16 +10,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/panda4man/homelab-media-metadata-backup/internal/clockx"
 	"github.com/panda4man/homelab-media-metadata-backup/internal/config"
-	"github.com/panda4man/homelab-media-metadata-backup/internal/filesystem"
-	"github.com/panda4man/homelab-media-metadata-backup/internal/influx"
-	"github.com/panda4man/homelab-media-metadata-backup/internal/offsite"
 	"github.com/panda4man/homelab-media-metadata-backup/internal/orchestrator"
-	"github.com/panda4man/homelab-media-metadata-backup/internal/radarr"
 	"github.com/panda4man/homelab-media-metadata-backup/internal/runlock"
-	"github.com/panda4man/homelab-media-metadata-backup/internal/snapshot"
-	"github.com/panda4man/homelab-media-metadata-backup/internal/sonarr"
 	"github.com/panda4man/homelab-media-metadata-backup/internal/validation"
 )
 
@@ -98,46 +91,7 @@ func runCommand(stdout, stderr io.Writer, getenv func(string) string) int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	radarrClient := radarr.New(cfg.RadarrURL, cfg.RadarrAPIKey)
-	sonarrClient := sonarr.New(cfg.SonarrURL, cfg.SonarrAPIKey)
-	offsiteSyncer := offsite.Syncer{Runner: offsite.ExecRunner{}, Remote: cfg.RcloneRemote, Logger: logger}
-
-	publisher := influx.Publisher{
-		Tags:   influx.Tags{Host: hostname, Job: "media-inventory", SchemaVersion: 1},
-		Clock:  clockx.System{},
-		Logger: logger,
-	}
-	if cfg.InfluxURL != "" {
-		publisher.Client = influx.New(cfg.InfluxURL, cfg.InfluxToken, cfg.InfluxOrg, cfg.InfluxBucket)
-	}
-
-	deps := orchestrator.Deps{
-		Clock:    clockx.System{},
-		Logger:   logger,
-		Hostname: hostname,
-
-		WalkRoots: filesystem.WalkRoots,
-
-		RadarrPing:   radarrClient.Ping,
-		RadarrMovies: radarrClient.Movies,
-
-		SonarrPing:     sonarrClient.Ping,
-		SonarrSeries:   sonarrClient.Series,
-		SonarrEpisodes: sonarrClient.Episodes,
-
-		WriteJSON:           snapshot.WriteJSON,
-		WriteSHA256:         snapshot.WriteSHA256,
-		WriteMoviesCSV:      snapshot.WriteMoviesCSV,
-		WriteEpisodesCSV:    snapshot.WriteEpisodesCSV,
-		LoadPrevious:        snapshot.LoadPrevious,
-		UpdateLatest:        snapshot.UpdateLatest,
-		UpdateLastKnownGood: snapshot.UpdateLastKnownGood,
-		Prune:               snapshot.Prune,
-
-		OffsiteSync: offsiteSyncer.Sync,
-
-		PublishMetrics: publisher.Publish,
-	}
+	deps := buildDeps(cfg, logger, hostname)
 
 	result, runErr := orchestrator.Run(ctx, cfg, deps)
 
