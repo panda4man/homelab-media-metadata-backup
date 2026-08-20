@@ -2,7 +2,7 @@ services:
   media-inventory:
     build: .
     container_name: media-inventory
-    restart: unless-stopped
+    restart: always
 
     # These three are fixed to match the volumes below and deliberately
     # override whatever env_file provides for them - the app only ever
