@@ -32,6 +32,42 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  media-inventory-api:
+    build: .
+    container_name: media-inventory-api
+    restart: always
+    command: ["/app/media-inventory", "serve"]
+
+    # Same fixed container-internal paths as media-inventory above. This
+    # service runs the same image, just under the `serve` subcommand.
+    environment:
+      TZ: ${TZ}
+      MEDIA_MOVIES_PATH: /media/movies
+      MEDIA_TV_PATH: /media/tv
+      SNAPSHOT_PATH: /data/snapshots
+      RCLONE_CONFIG: /config/rclone.conf
+
+    env_file:
+      - .env
+
+    volumes:
+      - ${HOST_MEDIA_MOVIES_PATH}:/media/movies:ro
+      - ${HOST_MEDIA_TV_PATH}:/media/tv:ro
+      - ${HOST_SNAPSHOT_PATH}:/data/snapshots
+      - ${HOST_RCLONE_CONFIG_PATH}:/config
+
+    ports:
+      - ${API_PORT:-8080}:8080
+
+    networks:
+      - homelab_stack
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 networks:
   homelab_stack:
     external: true

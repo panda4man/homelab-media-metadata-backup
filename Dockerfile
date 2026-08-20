@@ -29,11 +29,14 @@ WORKDIR /app
 COPY --from=builder /out/media-inventory /app/media-inventory
 COPY cron/crontab /app/crontab
 
+EXPOSE 8080
+
 USER app
 
 # CMD, not ENTRYPOINT: `docker compose run --rm media-inventory
 # /app/media-inventory run` (the manual-execution path) replaces CMD
 # entirely. An ENTRYPOINT here would instead append that command as
 # extra arguments to supercronic, which is not what either invocation
-# wants.
+# wants. The `serve` and `mcp` subcommands share this same image, invoked
+# via `command:` overrides in compose.yml rather than separate builds.
 CMD ["/usr/local/bin/supercronic", "/app/crontab"]

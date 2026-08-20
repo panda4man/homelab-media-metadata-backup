@@ -112,6 +112,50 @@ it does not retroactively make the snapshot itself untrustworthy.
 | 2 | Usage or configuration error (missing/invalid env vars). |
 | 3 | Another run is already in progress. |
 | 4 | Off-site backup failure — the snapshot itself is valid/warning, but the off-site copy failed. |
+| 5 | The `serve` command's HTTP listener failed to bind, or the API server returned an error while running. |
+
+## Remote triggering
+
+The `serve` subcommand (`docker compose up -d media-inventory-api`, or
+`docker compose up -d` to start both services) runs a small HTTP API for
+triggering a run on demand, instead of waiting for Sunday. It shares the
+same image and the same `.env` as the cron container, coordinating with
+it through the same run lock file on the shared snapshot volume — a
+manual trigger while the weekly cron job is mid-run (or vice versa) is
+rejected rather than overlapping.
+
+- `POST /v1/runs` — starts a run in the background, returns `202` with
+  the new run's id and status.
+- `GET /v1/runs/{id}` — returns `200` with the run's current status
+  (`running`, `completed`, or `rejected`), or `404` if the id is unknown.
+- Both endpoints require `API_TOKEN` set (minimum 16 characters — `serve`
+  refuses to start otherwise) and sent as `Authorization: Bearer <token>`;
+  an unauthenticated or wrong-token request gets `401`.
+- If a run is already in progress (triggered manually or by cron),
+  `POST /v1/runs` returns `409` instead of queuing or overlapping.
+
+### MCP client configuration
+
+The `mcp` subcommand exposes the same API to any MCP-compatible client
+(e.g. Claude Desktop, Claude Code) as `trigger_backup`/`get_backup_run`
+tools. It runs on the operator's own machine, not inside the backup
+container, and only needs `API_URL`/`API_TOKEN` — nothing else from
+`.env`:
+
+```json
+{
+  "mcpServers": {
+    "media-inventory": {
+      "command": "/path/to/media-inventory",
+      "args": ["mcp"],
+      "env": {
+        "API_URL": "http://your-host:8080",
+        "API_TOKEN": "your-token-here"
+      }
+    }
+  }
+}
+```
 
 ## Disaster recovery
 
