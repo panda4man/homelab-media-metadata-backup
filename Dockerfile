@@ -36,4 +36,4 @@ USER app
 # entirely. An ENTRYPOINT here would instead append that command as
 # extra arguments to supercronic, which is not what either invocation
 # wants.
-CMD ["supercronic", "/app/crontab"]
+CMD ["/usr/local/bin/supercronic", "/app/crontab"]
