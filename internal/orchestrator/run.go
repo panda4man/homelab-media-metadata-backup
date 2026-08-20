@@ -59,6 +59,8 @@ func Run(ctx context.Context, cfg config.Config, deps Deps) (result Result, err 
 	}
 	defer release()
 
+	logger.Info("inventory run starting")
+
 	var (
 		snap          inventory.Snapshot
 		diff          validation.Diff
@@ -102,6 +104,7 @@ func Run(ctx context.Context, cfg config.Config, deps Deps) (result Result, err 
 	}
 
 	// Step 5: load Sonarr metadata (series, then per-series episodes).
+	logger.Info("loading sonarr/radarr metadata")
 	seriesList, seriesErr := deps.SonarrSeries(ctx)
 	if seriesErr != nil {
 		sonarrUp = false
@@ -137,12 +140,14 @@ func Run(ctx context.Context, cfg config.Config, deps Deps) (result Result, err 
 		{Name: "movies", Path: cfg.MediaMoviesPath},
 		{Name: "tv", Path: cfg.MediaTVPath},
 	}
+	logger.Info("scanning filesystem", "roots", []string{"movies", "tv"})
 	walkResult, walkErr := deps.WalkRoots(ctx, roots)
 	if walkErr != nil && (errors.Is(walkErr, context.Canceled) || errors.Is(walkErr, context.DeadlineExceeded)) {
 		logger.Error("scan cancelled", "error", walkErr)
 		state = validation.StateFailed
 		return Result{State: state}, walkErr
 	}
+	logger.Info("filesystem scan complete", "files", len(walkResult.Files), "roots_scanned", walkResult.RootsScanned)
 	// A root-level failure (walkErr wrapping ErrRootInaccessible) does not
 	// abort the run: continue with whatever files the other root(s)
 	// yielded, write a forensic snapshot, and let the sanity checks below
@@ -226,9 +231,12 @@ func Run(ctx context.Context, cfg config.Config, deps Deps) (result Result, err 
 	}
 
 	// Step 18: off-site sync.
+	logger.Info("starting offsite sync")
 	offsiteResult, offsiteErr := deps.OffsiteSync(ctx, cfg.SnapshotPath)
 	if offsiteErr != nil {
 		logger.Error("offsite sync failed", "error", offsiteErr)
+	} else {
+		logger.Info("offsite sync complete", "success", offsiteResult.Success, "skipped", offsiteResult.Skipped)
 	}
 
 	// Step 19 (metrics) happens in the deferred func above.
