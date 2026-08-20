@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net"
 	"net/http"
 	"time"
@@ -24,6 +25,7 @@ type Config struct {
 	LockPath string
 	NewID    func() string
 	Now      func() time.Time
+	Logger   *slog.Logger
 }
 
 const healthPath = "/v1/health"

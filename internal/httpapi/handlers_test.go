@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -32,7 +34,8 @@ func testConfig(t *testing.T) Config {
 			n := atomic.AddInt64(&seq, 1)
 			return fmt.Sprintf("id-%d", n)
 		},
-		Now: func() time.Time { return time.Unix(0, 0).UTC() },
+		Now:    func() time.Time { return time.Unix(0, 0).UTC() },
+		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
 }
 
@@ -261,6 +264,40 @@ func TestRunsCreate_LockFileAlreadyHeld_Returns409WithoutInvokingRunFn(t *testin
 	}
 	if !strings.Contains(rec.Body.String(), `"error":"already_running"`) {
 		t.Errorf("body = %q, want error already_running", rec.Body.String())
+	}
+	if atomic.LoadInt32(&calls) != 0 {
+		t.Errorf("RunFn called %d times, want 0", calls)
+	}
+}
+
+func TestRunsCreate_LockFileUncreatable_Returns500NotAlreadyRunning(t *testing.T) {
+	cfg := testConfig(t)
+	// LockPath's parent directory doesn't exist, so opening it fails with
+	// something other than runlock.ErrLocked - this must not be reported
+	// as "already_running", which would hide a real server-side problem
+	// behind a misleading busy signal.
+	cfg.LockPath = cfg.LockPath + "/no-such-dir/run.lock"
+
+	var calls int32
+	cfg.RunFn = func(ctx context.Context, c config.Config) (orchestrator.Result, error) {
+		atomic.AddInt32(&calls, 1)
+		return orchestrator.Result{}, nil
+	}
+	handler := New(cfg)
+
+	req := httptest.NewRequest("POST", "/v1/runs", nil)
+	req.Header.Set("Authorization", "Bearer "+cfg.Token)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500, body=%s", rec.Code, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "already_running") {
+		t.Errorf("body = %q, must not report already_running for a non-lock error", rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `"error":"lock_unavailable"`) {
+		t.Errorf("body = %q, want error lock_unavailable", rec.Body.String())
 	}
 	if atomic.LoadInt32(&calls) != 0 {
 		t.Errorf("RunFn called %d times, want 0", calls)

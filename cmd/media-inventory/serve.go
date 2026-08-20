@@ -58,8 +58,9 @@ func serveCommand(stdout, stderr io.Writer, getenv func(string) string) int {
 		RunFn: func(runCtx context.Context, runCfg config.Config) (orchestrator.Result, error) {
 			return orchestrator.Run(runCtx, runCfg, deps)
 		},
-		NewID: newRunID,
-		Now:   time.Now,
+		NewID:  newRunID,
+		Now:    time.Now,
+		Logger: logger,
 	})
 	if err := httpapi.Serve(ctx, ln, handler); err != nil {
 		fmt.Fprintln(stderr, "error:", err)

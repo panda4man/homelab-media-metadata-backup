@@ -37,7 +37,15 @@ func (h *runsHandler) create(w http.ResponseWriter, r *http.Request) {
 	// this handler holding it for the run's whole duration.
 	release, lockErr := runlock.Acquire(h.cfg.LockPath)
 	if lockErr != nil {
-		writeJSON(w, http.StatusConflict, ErrorResponse{Error: "already_running"})
+		if errors.Is(lockErr, runlock.ErrLocked) {
+			writeJSON(w, http.StatusConflict, ErrorResponse{Error: "already_running"})
+			return
+		}
+		// Anything other than genuine lock contention (e.g. a permission
+		// error creating the lock file) is a server problem, not a busy
+		// signal - surface it distinctly instead of masquerading as 409.
+		h.cfg.Logger.Error("failed to acquire run lock", "error", lockErr)
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "lock_unavailable", Message: lockErr.Error()})
 		return
 	}
 	_ = release()
