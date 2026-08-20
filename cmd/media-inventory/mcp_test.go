@@ -8,9 +8,37 @@ import (
 	"github.com/panda4man/homelab-media-metadata-backup/internal/httpapi"
 )
 
+// mcpEnv returns the minimal env mcpCommand needs: API_URL and a
+// long-enough API_TOKEN. Deliberately excludes every app-config var
+// (MEDIA_MOVIES_PATH, RADARR_API_KEY, etc) that config.Load would require —
+// mcpCommand must never call config.Load, since it runs on the operator's
+// workstation, not the backup host.
+func mcpEnv() map[string]string {
+	return map[string]string{
+		"API_URL":   "http://backup-host:8080",
+		"API_TOKEN": "a-token-at-least-16-chars",
+	}
+}
+
+func TestMcpCommand_MissingAPIURL_ExitsUsageError(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	env := mcpEnv()
+	delete(env, "API_URL")
+
+	code := mcpCommand(strings.NewReader(""), &stdout, &stderr, getenvFrom(env))
+
+	if code != exitUsage {
+		t.Fatalf("exit code = %d, want %d, stderr = %q", code, exitUsage, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "API_URL") {
+		t.Errorf("stderr = %q, want it to name API_URL", stderr.String())
+	}
+}
+
 func TestMcpCommand_MissingAPIToken_ExitsUsageError(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	env := validConfigEnv()
+	env := mcpEnv()
+	delete(env, "API_TOKEN")
 
 	code := mcpCommand(strings.NewReader(""), &stdout, &stderr, getenvFrom(env))
 
@@ -24,7 +52,7 @@ func TestMcpCommand_MissingAPIToken_ExitsUsageError(t *testing.T) {
 
 func TestMcpCommand_ShortAPIToken_ExitsUsageError(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	env := validConfigEnv()
+	env := mcpEnv()
 	env["API_TOKEN"] = "short"
 
 	code := mcpCommand(strings.NewReader(""), &stdout, &stderr, getenvFrom(env))
@@ -37,20 +65,25 @@ func TestMcpCommand_ShortAPIToken_ExitsUsageError(t *testing.T) {
 	}
 }
 
-func TestMcpCommand_MissingConfig_ExitsUsageError(t *testing.T) {
+// TestMcpCommand_NoAppConfigVarsSet_StillRuns is the regression guard for
+// the bug this test replaced: mcpCommand must succeed on an env that
+// supplies ONLY API_URL/API_TOKEN, proving config.Load is never invoked on
+// this path (it would fail here, demanding MEDIA_MOVIES_PATH and friends,
+// none of which exist on the operator's workstation).
+func TestMcpCommand_NoAppConfigVarsSet_StillRuns(t *testing.T) {
 	var stdout, stderr bytes.Buffer
+	env := mcpEnv()
 
-	code := mcpCommand(strings.NewReader(""), &stdout, &stderr, noEnv)
+	code := mcpCommand(strings.NewReader(""), &stdout, &stderr, getenvFrom(env))
 
-	if code != exitUsage {
-		t.Fatalf("exit code = %d, want %d", code, exitUsage)
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d, stderr = %q", code, exitOK, stderr.String())
 	}
 }
 
 func TestMcpCommand_EmptyStdin_ServesUntilEOFAndExitsOK(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	env := validConfigEnv()
-	env["API_TOKEN"] = "a-token-at-least-16-chars"
+	env := mcpEnv()
 
 	code := mcpCommand(strings.NewReader(""), &stdout, &stderr, getenvFrom(env))
 
@@ -76,21 +109,5 @@ func TestToRunInfo_CopiesAllFields(t *testing.T) {
 		got.State != run.State || got.SnapshotPath != run.SnapshotPath ||
 		got.OffsiteSuccess != run.OffsiteSuccess || got.Error != run.Error {
 		t.Errorf("toRunInfo(%+v) = %+v, want a direct field-by-field copy", run, got)
-	}
-}
-
-func TestAPIBaseURL_ColonPrefixedAddr_PrependsLocalhost(t *testing.T) {
-	got := apiBaseURL(":8080")
-	want := "http://localhost:8080"
-	if got != want {
-		t.Errorf("apiBaseURL(%q) = %q, want %q", ":8080", got, want)
-	}
-}
-
-func TestAPIBaseURL_HostPortAddr_PrependsHTTP(t *testing.T) {
-	got := apiBaseURL("127.0.0.1:9000")
-	want := "http://127.0.0.1:9000"
-	if got != want {
-		t.Errorf("apiBaseURL(%q) = %q, want %q", "127.0.0.1:9000", got, want)
 	}
 }

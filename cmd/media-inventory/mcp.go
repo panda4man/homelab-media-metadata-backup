@@ -7,31 +7,32 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/panda4man/homelab-media-metadata-backup/internal/apiclient"
-	"github.com/panda4man/homelab-media-metadata-backup/internal/config"
 	"github.com/panda4man/homelab-media-metadata-backup/internal/httpapi"
 	"github.com/panda4man/homelab-media-metadata-backup/internal/mcp"
 )
 
-// mcpCommand loads configuration and runs an MCP stdio server exposing the
-// on-demand backup trigger API as tools, reaching it over apiclient against
-// the "serve" command's HTTP API.
+// mcpCommand runs an MCP stdio server exposing the on-demand backup trigger
+// API as tools, reaching it over apiclient. It reads API_URL/API_TOKEN
+// directly rather than through config.Load: this process runs on the
+// operator's workstation, not the backup host, and has none of the app's
+// required config vars (MEDIA_MOVIES_PATH, RADARR_API_KEY, etc).
 func mcpCommand(stdin io.Reader, stdout, stderr io.Writer, getenv func(string) string) int {
-	cfg, err := config.Load(getenv)
-	if err != nil {
-		fmt.Fprintln(stderr, "error:", err)
+	apiURL := getenv("API_URL")
+	if apiURL == "" {
+		fmt.Fprintln(stderr, "error: API_URL is required")
 		return exitUsage
 	}
 
-	if len(cfg.APIToken) < minAPITokenLength {
+	apiToken := getenv("API_TOKEN")
+	if len(apiToken) < minAPITokenLength {
 		fmt.Fprintf(stderr, "error: API_TOKEN must be at least %d characters\n", minAPITokenLength)
 		return exitUsage
 	}
 
-	client := apiclient.New(apiBaseURL(cfg.APIAddr), cfg.APIToken)
+	client := apiclient.New(apiURL, apiToken)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -55,15 +56,6 @@ func mcpCommand(stdin io.Reader, stdout, stderr io.Writer, getenv func(string) s
 		return exitServeFailed
 	}
 	return exitOK
-}
-
-// apiBaseURL turns a net.Listen-style address (e.g. ":8080" or
-// "127.0.0.1:9000") into the HTTP base URL apiclient dials.
-func apiBaseURL(addr string) string {
-	if strings.HasPrefix(addr, ":") {
-		return "http://localhost" + addr
-	}
-	return "http://" + addr
 }
 
 // toRunInfo is the chokepoint where httpapi.Run's fields cross into mcp's

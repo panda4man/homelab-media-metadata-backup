@@ -182,13 +182,18 @@ func TestRealMain_NoSubcommand_UsageListsMcp(t *testing.T) {
 
 func TestRealMain_Mcp_ShortAPIToken_ExitsUsageError(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	env := validConfigEnv()
-	env["API_TOKEN"] = "short"
+	env := map[string]string{
+		"API_URL":   "http://backup-host:8080",
+		"API_TOKEN": "short",
+	}
 
 	code := realMain([]string{"mcp"}, strings.NewReader(""), &stdout, &stderr, getenvFrom(env))
 
 	if code != 2 {
 		t.Fatalf("exit code = %d, want 2, stderr = %q", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "API_TOKEN") {
+		t.Errorf("stderr = %q, want it to name API_TOKEN", stderr.String())
 	}
 	if !strings.Contains(stderr.String(), "API_TOKEN") {
 		t.Errorf("stderr = %q, want it to name API_TOKEN", stderr.String())
