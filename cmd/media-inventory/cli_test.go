@@ -130,3 +130,42 @@ func TestRealMain_Config_MissingRequiredVars_ExitsUsageError(t *testing.T) {
 		t.Errorf("stderr = %q, want it to name the missing var", stderr.String())
 	}
 }
+
+func TestRealMain_Serve_MissingAPIToken_ExitsUsageError(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	env := validConfigEnv()
+
+	code := realMain([]string{"serve"}, &stdout, &stderr, getenvFrom(env))
+
+	if code != 2 {
+		t.Fatalf("exit code = %d, want 2, stderr = %q", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "API_TOKEN") {
+		t.Errorf("stderr = %q, want it to name API_TOKEN", stderr.String())
+	}
+}
+
+func TestRealMain_Serve_ShortAPIToken_ExitsUsageError(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	env := validConfigEnv()
+	env["API_TOKEN"] = "short"
+
+	code := realMain([]string{"serve"}, &stdout, &stderr, getenvFrom(env))
+
+	if code != 2 {
+		t.Fatalf("exit code = %d, want 2, stderr = %q", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "API_TOKEN") {
+		t.Errorf("stderr = %q, want it to name API_TOKEN", stderr.String())
+	}
+}
+
+func TestRealMain_NoSubcommand_UsageListsServe(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+
+	realMain(nil, &stdout, &stderr, noEnv)
+
+	if !strings.Contains(stderr.String(), "serve") {
+		t.Errorf("stderr = %q, want usage to list serve", stderr.String())
+	}
+}

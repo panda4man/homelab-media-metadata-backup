@@ -281,6 +281,58 @@ func TestLoad_InvalidTZ_Error(t *testing.T) {
 	}
 }
 
+func TestLoad_APIDefaults_WhenAPIVarsUnset(t *testing.T) {
+	cfg, err := Load(getenvFrom(fullEnv()))
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+	if cfg.APIAddr != ":8080" {
+		t.Errorf("APIAddr = %q, want :8080", cfg.APIAddr)
+	}
+	if cfg.APIToken != "" {
+		t.Errorf("APIToken = %q, want empty", cfg.APIToken)
+	}
+}
+
+func TestLoad_APIAddrAndToken_Set(t *testing.T) {
+	env := fullEnv()
+	env["API_ADDR"] = "127.0.0.1:9000"
+	env["API_TOKEN"] = "s3cret-something"
+
+	cfg, err := Load(getenvFrom(env))
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+	if cfg.APIAddr != "127.0.0.1:9000" {
+		t.Errorf("APIAddr = %q, want 127.0.0.1:9000", cfg.APIAddr)
+	}
+	if cfg.APIToken != "s3cret-something" {
+		t.Errorf("APIToken = %q, want s3cret-something", cfg.APIToken)
+	}
+}
+
+func TestConfig_String_APIAddrPlain_APITokenRedacted(t *testing.T) {
+	env := fullEnv()
+	env["API_ADDR"] = "127.0.0.1:9000"
+	env["API_TOKEN"] = "s3cret-something"
+
+	cfg, err := Load(getenvFrom(env))
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+
+	s := cfg.String()
+	if !strings.Contains(s, "API_ADDR=127.0.0.1:9000") {
+		t.Errorf("String() = %q, want it to contain API_ADDR=127.0.0.1:9000", s)
+	}
+	if !strings.Contains(s, "API_TOKEN=REDACTED") {
+		t.Errorf("String() = %q, want it to contain API_TOKEN=REDACTED", s)
+	}
+	if strings.Contains(s, "s3cret-something") {
+		t.Errorf("String() = %q, contains unredacted API token", s)
+	}
+}
+
 func TestLoad_PerformsNoIO(t *testing.T) {
 	// Load must only call the injected getenv - proven by never touching the
 	// real environment even when it differs from what getenv returns.

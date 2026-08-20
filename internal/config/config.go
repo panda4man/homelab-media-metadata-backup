@@ -39,6 +39,9 @@ type Config struct {
 	MaxUnmatchedPercent          float64
 
 	RcloneRemote string
+
+	APIAddr  string
+	APIToken string
 }
 
 // OffsiteEnabled reports whether off-site sync is configured. An empty
@@ -77,6 +80,8 @@ func (c Config) String() string {
 	fmt.Fprintf(&b, "MAX_FILES_REMOVED=%d\n", c.MaxFilesRemoved)
 	fmt.Fprintf(&b, "MAX_UNMATCHED_PERCENT=%v\n", c.MaxUnmatchedPercent)
 	fmt.Fprintf(&b, "RCLONE_REMOTE=%s\n", c.RcloneRemote)
+	fmt.Fprintf(&b, "API_ADDR=%s\n", c.APIAddr)
+	fmt.Fprintf(&b, "API_TOKEN=%s\n", redact(c.APIToken))
 	return b.String()
 }
 
@@ -89,6 +94,7 @@ const (
 	defaultMaxEpisodeDecreasePercent    = 5
 	defaultMaxFilesRemoved              = 100
 	defaultMaxUnmatchedPercent          = 5
+	defaultAPIAddr                      = ":8080"
 )
 
 // Load builds a Config from environment variables read through getenv.
@@ -119,7 +125,11 @@ func Load(getenv func(string) string) (Config, error) {
 		InfluxBucket: getenv("INFLUX_BUCKET"),
 
 		RcloneRemote: getenv("RCLONE_REMOTE"),
+
+		APIToken: getenv("API_TOKEN"),
 	}
+
+	cfg.APIAddr = withDefault(getenv("API_ADDR"), defaultAPIAddr)
 
 	cfg.TZ = withDefault(getenv("TZ"), defaultTZ)
 	if _, err := time.LoadLocation(cfg.TZ); err != nil {

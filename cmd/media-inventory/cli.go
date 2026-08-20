@@ -30,12 +30,14 @@ import (
 //	2 usage / config error
 //	3 run already in progress
 //	4 off-site backup failure (snapshot itself is valid/warning, but the off-site copy failed)
+//	5 serve command failed to listen or the API server stopped with an error
 const (
 	exitOK            = 0
 	exitFailed        = 1
 	exitUsage         = 2
 	exitAlreadyLocked = 3
 	exitOffsiteFailed = 4
+	exitServeFailed   = 5
 )
 
 const version = "0.1.0-dev"
@@ -44,6 +46,7 @@ const usage = `usage: media-inventory <command>
 
 commands:
   run       execute a full inventory scan
+  serve     run the on-demand backup trigger HTTP API
   config    print the resolved configuration and exit
   version   print the version and exit
 `
@@ -68,6 +71,8 @@ func realMain(args []string, stdout, stderr io.Writer, getenv func(string) strin
 		return exitOK
 	case "run":
 		return runCommand(stdout, stderr, getenv)
+	case "serve":
+		return serveCommand(stdout, stderr, getenv)
 	default:
 		fmt.Fprint(stderr, usage)
 		return exitUsage
