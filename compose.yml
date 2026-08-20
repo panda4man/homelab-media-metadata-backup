@@ -12,6 +12,7 @@ services:
       MEDIA_MOVIES_PATH: /media/movies
       MEDIA_TV_PATH: /media/tv
       SNAPSHOT_PATH: /data/snapshots
+      RCLONE_CONFIG: /config/rclone.conf
 
     env_file:
       - .env
@@ -20,6 +21,7 @@ services:
       - ${HOST_MEDIA_MOVIES_PATH}:/media/movies:ro
       - ${HOST_MEDIA_TV_PATH}:/media/tv:ro
       - ${HOST_SNAPSHOT_PATH}:/data/snapshots
+      - ${HOST_RCLONE_CONFIG_PATH}:/config
 
     networks:
       - homelab_stack
