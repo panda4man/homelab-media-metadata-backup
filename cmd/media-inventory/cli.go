@@ -40,11 +40,12 @@ const usage = `usage: media-inventory <command>
 commands:
   run       execute a full inventory scan
   serve     run the on-demand backup trigger HTTP API
+  mcp       run an MCP stdio server exposing the backup trigger as tools
   config    print the resolved configuration and exit
   version   print the version and exit
 `
 
-func realMain(args []string, stdout, stderr io.Writer, getenv func(string) string) int {
+func realMain(args []string, stdin io.Reader, stdout, stderr io.Writer, getenv func(string) string) int {
 	if len(args) == 0 {
 		fmt.Fprint(stderr, usage)
 		return exitUsage
@@ -66,6 +67,8 @@ func realMain(args []string, stdout, stderr io.Writer, getenv func(string) strin
 		return runCommand(stdout, stderr, getenv)
 	case "serve":
 		return serveCommand(stdout, stderr, getenv)
+	case "mcp":
+		return mcpCommand(stdin, stdout, stderr, getenv)
 	default:
 		fmt.Fprint(stderr, usage)
 		return exitUsage
